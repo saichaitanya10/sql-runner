@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react'
 import { Play, Trash2, LogOut, Sun, Moon, Table as TableIcon, UserRound, ListChecks } from 'lucide-react'
 import { onAuthStateChanged, signOut } from 'firebase/auth'
-import { auth } from '../lib/firebase'
+import { auth, isFirebaseConfigured } from '../lib/firebase'
 import { runQuery, type QueryResult } from '../lib/api'
 import { ResultsTable } from './ResultsTable'
 
@@ -16,6 +16,10 @@ export default function HomePage() {
   const [result, setResult] = useState<QueryResult | null>(null)
 
   useEffect(() => {
+    if (!isFirebaseConfigured) {
+      setUserName('Guest')
+      return
+    }
     const unsub = onAuthStateChanged(auth as any, (u) => {
       const name = (u?.displayName as string) || (u?.email as string) || 'User'
       setUserName(name)
