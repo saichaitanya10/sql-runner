@@ -122,16 +122,25 @@ Security
 
 ## Deployment
 
-Provide your live URLs here once deployed.
+### Live URLs
+- **Frontend**: https://sql-runner-hazel.vercel.app/
+- **Backend**: https://sql-runner-xmi7.onrender.com/
 
-- Frontend (Vercel/Netlify)
-  - Build: `npm run build`
-  - Output: `dist`
-  - Env: `VITE_API_BASE_URL=https://<your-backend-domain>`
-- Backend (Render/Railway/Fly/io)
-  - Install: `pip install -r backend/requirements.txt`
-  - Start: `uvicorn backend.main:app --host 0.0.0.0 --port $PORT`
-  - Env:
-    - `ALLOW_UNAUTH=false` (recommended for prod)
-    - `GOOGLE_APPLICATION_CREDENTIALS=/app/serviceAccountKey.json` (or provide secrets as env/volume)
-  - CORS: add your frontend domain to allowed origins
+### Frontend (Vercel)
+- Build: `npm run build`
+- Output: `dist`
+- Environment Variables (set in Vercel dashboard):
+  - `VITE_API_BASE_URL=https://sql-runner-xmi7.onrender.com`
+  - `VITE_FIREBASE_API_KEY=<your-key>`
+  - `VITE_FIREBASE_AUTH_DOMAIN=<your-domain>`
+  - `VITE_FIREBASE_PROJECT_ID=<your-project-id>`
+  - `VITE_FIREBASE_APP_ID=<your-app-id>`
+
+### Backend (Render)
+- Runtime: Python 3.11.9 (specified in `runtime.txt`)
+- Install: `pip install -r requirements.txt`
+- Start: `uvicorn main:app --host 0.0.0.0 --port $PORT`
+- Environment Variables (set in Render dashboard):
+  - `ALLOW_UNAUTH=false` (recommended for prod)
+  - `GOOGLE_APPLICATION_CREDENTIALS=/app/serviceAccountKey.json` (or provide secrets as env/volume)
+- CORS: Frontend domain `https://sql-runner-hazel.vercel.app` is already configured in `main.py`
