@@ -42,6 +42,7 @@ export default function HomePage() {
 
   // Clear session tables when user logs out
   useEffect(() => {
+    if (!isFirebaseConfigured) return
     const unsub = onAuthStateChanged(auth as any, (u) => {
       if (!u) {
         setSessionTables([])
