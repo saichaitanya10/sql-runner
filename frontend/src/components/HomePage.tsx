@@ -1,8 +1,8 @@
 import React, { useEffect, useState } from 'react'
-import { Play, Trash2, LogOut, Sun, Moon, Table as TableIcon, UserRound, ListChecks } from 'lucide-react'
+import { Play, Trash2, LogOut, Sun, Moon, Table as TableIcon, UserRound, ListChecks, ChevronDown, ChevronRight, Database } from 'lucide-react'
 import { onAuthStateChanged, signOut } from 'firebase/auth'
 import { auth, isFirebaseConfigured } from '../lib/firebase'
-import { runQuery, type QueryResult } from '../lib/api'
+import { runQuery, getTableInfo, type QueryResult, type TableInfo } from '../lib/api'
 import { ResultsTable } from './ResultsTable'
 
 export default function HomePage() {
@@ -14,6 +14,9 @@ export default function HomePage() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [result, setResult] = useState<QueryResult | null>(null)
+  const [expandedTable, setExpandedTable] = useState<string | null>(null)
+  const [tableInfoCache, setTableInfoCache] = useState<Record<string, TableInfo>>({})
+  const [loadingInfo, setLoadingInfo] = useState<string | null>(null)
 
   useEffect(() => {
     if (!isFirebaseConfigured) {
@@ -96,6 +99,32 @@ export default function HomePage() {
     setQuery('')
   }
 
+  async function toggleTableExpand(tableName: string) {
+    if (expandedTable === tableName) {
+      setExpandedTable(null)
+      return
+    }
+    
+    setExpandedTable(tableName)
+    
+    // Fetch table info if not cached
+    if (!tableInfoCache[tableName]) {
+      setLoadingInfo(tableName)
+      try {
+        const info = await getTableInfo(tableName)
+        setTableInfoCache(prev => ({ ...prev, [tableName]: info }))
+      } catch (e) {
+        console.error('Failed to load table info:', e)
+      } finally {
+        setLoadingInfo(null)
+      }
+    }
+  }
+
+  function selectRecentQuery(q: string) {
+    setQuery(q)
+  }
+
   return (
     <main className="min-h-screen w-screen relative overflow-hidden" style={{ fontFamily: 'Inter, Poppins, system-ui, -apple-system, Segoe UI, Roboto, Arial' }}>
       {/* Background gradient and corner glows */}
@@ -141,9 +170,46 @@ export default function HomePage() {
                 <div className="text-white/50">No tables</div>
               ) : (
                 <ul className="space-y-1">
-                  {sessionTables.map((t) => (
-                    <li key={t} className="px-2 py-1 rounded hover:bg-white/10 cursor-pointer transition">{t}</li>
-                  ))}
+                  {sessionTables.map((t) => {
+                    const isExpanded = expandedTable === t
+                    const info = tableInfoCache[t]
+                    const isLoading = loadingInfo === t
+                    
+                    return (
+                      <li key={t} className="border-b border-white/5 last:border-0">
+                        <button
+                          className="w-full text-left px-2 py-1.5 rounded hover:bg-white/10 inline-flex items-center gap-2 transition-colors"
+                          onClick={() => toggleTableExpand(t)}
+                        >
+                          {isExpanded ? <ChevronDown size={14} className="text-white/50" /> : <ChevronRight size={14} className="text-white/50" />}
+                          <Database size={14} className="text-purple-400"/>
+                          <span className="flex-1">{t}</span>
+                        </button>
+                        
+                        {isExpanded && (
+                          <div className="ml-6 mt-1 mb-2 text-xs">
+                            {isLoading ? (
+                              <div className="text-white/50 px-2 py-1">Loading...</div>
+                            ) : info ? (
+                              <div className="bg-white/5 rounded p-2 space-y-1">
+                                <div className="font-semibold text-white/70 mb-1">Columns:</div>
+                                {info.columns.map((col, idx) => (
+                                  <div key={idx} className="flex items-center gap-2 text-white/60">
+                                    <span className="font-mono text-[10px] bg-purple-500/20 text-purple-300 px-1.5 py-0.5 rounded">
+                                      {col.type}
+                                    </span>
+                                    <span className="font-medium">{col.name}</span>
+                                  </div>
+                                ))}
+                              </div>
+                            ) : (
+                              <div className="text-white/50 px-2 py-1">No info available</div>
+                            )}
+                          </div>
+                        )}
+                      </li>
+                    )
+                  })}
                 </ul>
               )}
             </div>
@@ -158,7 +224,15 @@ export default function HomePage() {
               ) : (
                 <ul className="space-y-1">
                   {recent.map((q, i) => (
-                    <li key={i} className="px-2 py-1 rounded hover:bg-white/10 cursor-pointer transition truncate">{q}</li>
+                    <li key={i}>
+                      <button
+                        className="w-full text-left px-2 py-1 rounded hover:bg-white/10 cursor-pointer transition truncate"
+                        onClick={() => selectRecentQuery(q)}
+                        title={q}
+                      >
+                        {q}
+                      </button>
+                    </li>
                   ))}
                 </ul>
               )}
