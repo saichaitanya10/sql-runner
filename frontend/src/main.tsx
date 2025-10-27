@@ -69,7 +69,7 @@ ReactDOM.createRoot(root).render(
         <AuthGate />
       </BrowserRouter>
     ) : (
-      <App />
+      <HomePage />
     )}
   </React.StrictMode>,
 )

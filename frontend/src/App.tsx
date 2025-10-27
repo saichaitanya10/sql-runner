@@ -7,7 +7,7 @@ import { RecentQueries } from './components/RecentQueries'
 import { getTables, getTableInfo, runQuery, type QueryResult, type TableInfo } from './lib/api'
 import { toCSV, downloadCSV } from './lib/csv'
 import { Sun, Moon, LogOut, Search, Play, Save, Trash2, Table as TableIcon, User } from 'lucide-react'
-import { auth } from './lib/firebase'
+import { auth, isFirebaseConfigured } from './lib/firebase'
 import { onAuthStateChanged, signOut } from 'firebase/auth'
 
 export default function App() {
@@ -32,7 +32,8 @@ export default function App() {
       .catch(() => setTables([]))
     // Load recent
     try { const raw = localStorage.getItem('recentQueries'); if (raw) setRecent(JSON.parse(raw)) } catch {}
-    // Watch auth for user name
+    // Watch auth for user name only if Firebase is configured
+    if (!isFirebaseConfigured) return
     const unsub = onAuthStateChanged(auth as any, (u) => {
       if (u) setUserName(u.displayName || u.email || 'User')
     })
