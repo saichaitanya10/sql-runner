@@ -136,10 +136,32 @@ def execute_query(payload: QueryIn, user: Dict[str, Any] = Depends(verify_fireba
 
         def normalize(stmt: str) -> str:
             s = stmt
+            # Add IF NOT EXISTS to CREATE TABLE
             if re.match(r"^\s*create\s+table\b", s, flags=re.IGNORECASE) and not re.match(r"^\s*create\s+table\s+if\s+not\s+exists\b", s, flags=re.IGNORECASE):
                 s = re.sub(r"^(\s*create\s+table)(\s+)", r"\1 if not exists ", s, flags=re.IGNORECASE)
+            # Add IF EXISTS to DROP TABLE
             if re.match(r"^\s*drop\s+table\b", s, flags=re.IGNORECASE) and not re.match(r"^\s*drop\s+table\s+if\s+exists\b", s, flags=re.IGNORECASE):
                 s = re.sub(r"^(\s*drop\s+table)(\s+)", r"\1 if exists ", s, flags=re.IGNORECASE)
+            
+            # Convert MySQL/PostgreSQL syntax to SQLite
+            # AUTO_INCREMENT -> AUTOINCREMENT (SQLite uses INTEGER PRIMARY KEY AUTOINCREMENT)
+            s = re.sub(r'\bAUTO_INCREMENT\b', 'AUTOINCREMENT', s, flags=re.IGNORECASE)
+            
+            # Convert INT to INTEGER for primary keys with autoincrement
+            s = re.sub(r'\bINT\s+PRIMARY\s+KEY\s+AUTOINCREMENT\b', 'INTEGER PRIMARY KEY AUTOINCREMENT', s, flags=re.IGNORECASE)
+            
+            # Convert common MySQL types to SQLite equivalents
+            s = re.sub(r'\bVARCHAR\s*\(\s*\d+\s*\)', 'TEXT', s, flags=re.IGNORECASE)
+            s = re.sub(r'\bCHAR\s*\(\s*\d+\s*\)', 'TEXT', s, flags=re.IGNORECASE)
+            s = re.sub(r'\bTINYINT\b', 'INTEGER', s, flags=re.IGNORECASE)
+            s = re.sub(r'\bSMALLINT\b', 'INTEGER', s, flags=re.IGNORECASE)
+            s = re.sub(r'\bMEDIUMINT\b', 'INTEGER', s, flags=re.IGNORECASE)
+            s = re.sub(r'\bBIGINT\b', 'INTEGER', s, flags=re.IGNORECASE)
+            s = re.sub(r'\bDOUBLE\b', 'REAL', s, flags=re.IGNORECASE)
+            s = re.sub(r'\bFLOAT\b', 'REAL', s, flags=re.IGNORECASE)
+            s = re.sub(r'\bDATETIME\b', 'TEXT', s, flags=re.IGNORECASE)
+            s = re.sub(r'\bTIMESTAMP\b', 'TEXT', s, flags=re.IGNORECASE)
+            
             return s
 
         # Support multi-statement queries by splitting on ';'
